@@ -6,11 +6,9 @@ repository: "https://github.com/flatironinstitute/finufft"
 license: "Apache-2.0"
 dependencies: []
 
-defaults:
-  symbol_extensions: [".m", ".js"]
-  addpaths:
-    - path: "matlab/numbl"
-    - path: "matlab"
+addpaths:
+  - path: "matlab/numbl"
+  - path: "matlab"
 
 builds:
   - architectures: [linux_x86_64, macos_x86_64, windows_x86_64]

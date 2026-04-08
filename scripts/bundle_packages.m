@@ -46,9 +46,48 @@ for i = 1:length(items)
     fprintf('\n--- Bundling: %s ---\n', items(i).name);
 
     try
-        mip.bundle(pkgDir, '--output', outputDir, '--arch', architecture);
+        % Apply compiler environment from .compiler_env (SIMD builds)
+        originalEnv = struct();
+        compilerEnvFile = fullfile(pkgDir, '.compiler_env');
+        if exist(compilerEnvFile, 'file')
+            fid = fopen(compilerEnvFile, 'r');
+            envData = jsondecode(fread(fid, '*char')');
+            fclose(fid);
+            envNames = fieldnames(envData);
+            for j = 1:length(envNames)
+                originalEnv.(envNames{j}) = getenv(envNames{j});
+                setenv(envNames{j}, char(string(envData.(envNames{j}))));
+                fprintf('  Setting %s=%s\n', envNames{j}, char(string(envData.(envNames{j}))));
+            end
+        end
+
+        % Build bundle args (with optional --cpu-level)
+        bundleArgs = {pkgDir, '--output', outputDir, '--arch', architecture};
+        cpuLevelFile = fullfile(pkgDir, '.cpu_level');
+        if exist(cpuLevelFile, 'file')
+            cpuLevel = strtrim(fileread(cpuLevelFile));
+            bundleArgs = [bundleArgs, {'--cpu-level', cpuLevel}];
+            fprintf('  CPU level: %s\n', cpuLevel);
+        end
+
+        mip.bundle(bundleArgs{:});
         bundled = bundled + 1;
+
+        % Restore compiler environment
+        if exist(compilerEnvFile, 'file')
+            envNames = fieldnames(originalEnv);
+            for j = 1:length(envNames)
+                setenv(envNames{j}, originalEnv.(envNames{j}));
+            end
+        end
     catch ME
+        % Restore compiler environment on failure too
+        if exist('originalEnv', 'var') && isstruct(originalEnv)
+            envNames = fieldnames(originalEnv);
+            for j = 1:length(envNames)
+                setenv(envNames{j}, originalEnv.(envNames{j}));
+            end
+        end
         fprintf('Error bundling %s: %s\n', items(i).name, ME.message);
         failed = failed + 1;
     end

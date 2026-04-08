@@ -1,0 +1,10 @@
+simd: true
+
+source:
+  git: "https://github.com/flatironinstitute/finufft"
+  branch: "v2.5.0"
+  remove_dirs:
+    - docs
+    - test
+    - examples
+    - perftest
